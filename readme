@@ -1,0 +1,122 @@
+# Naranja Dulce - Sitio web de gestión de postres
+
+## Contexto de la empresa
+
+Naranja Dulce es una pyme dedicada a la elaboración de postres artesanales,
+hechos con ingredientes frescos y recetas caseras. Atiende pedidos para
+cumpleaños, celebraciones y antojos cotidianos.
+
+Actualmente la empresa difunde sus productos por Instagram (@naranja_dulce) y
+recibe pedidos por WhatsApp (+56 984684838), pero no cuenta con un sitio web
+propio donde exhibir su catálogo de forma ordenada.
+
+## Problemática
+
+- No existe un catálogo central y actualizado de postres.
+- La información de los productos (nombre, foto, descripción) se maneja
+  manualmente y se pierde entre publicaciones y conversaciones.
+- Los clientes no tienen un lugar claro donde conocer la oferta y contactar
+  a la empresa.
+
+## Objetivo del proyecto
+
+Transformar los servicios del sitio web de la evaluación anterior en una API RESTful que permita administrar el catálogo de postres (listar, ver, agregar, editar y eliminar productos, incluida su imagen referencial) y que pueda conectarse con otras aplicaciones. La lectura del catálogo es pública; las operaciones que modifican datos requieren autenticación mediante token JWT.
+
+## Servicios que ofrecee la API
+-	Listar todos los postres con su imagen, nombre y descripción.
+-	Consultar un postre específico.
+-	Crear un postre nuevo, con imagen.
+-	Editar un postre, incluyendo el cambio de su imagen.
+-	Eliminar un postre (también se elimina su imagen del disco).
+-	Iniciar sesión y obtener un token JWT, y renovarlo con un refresh token.
+-	Administrar los postres desde el panel de administración de Django (/admin/).
+
+
+# Postres
+- Tiramisu: 
+- Leche Asada: Cremosa leche horneada en un suave caramelo
+- Leche Nevada: Suave y esponjosa nube de merengue sobre una dulce crema de vainilla, con un toque de canela
+- Arroz con leche: Delicado, cremoso y dulce arroz en leche con toques de canela
+- Creme Brule: Suave y dulce crema horneada, con crocante de caramelo
+- Mousse Frutilla: Esponjosa crema con frutas de la temporada
+- Carlota: Crema suave intercalada con deliciosas galletas
+
+
+# Documentación de endpoints
+
+URL base: `http://127.0.0.1:8000`
+Formato de respuesta: JSON
+Autenticación: JWT. La lectura es pública. Crear, editar y eliminar requieren el header
+Authorization: Bearer <access_token>
+
+## Autenticación
+
+- POST : `/api/token/` |Inicia sesión y entrega los tokens `access` (dura 15 min) y `refresh` (dura 1 día) | 200 OK, 401 credenciales incorrectas |
+- POST | `/api/token/refresh/` |Entrega un nuevo `access` a partir del `refresh` | 200 OK, 401 token inválido o vencido |
+
+## Postres
+
+| Método | Ruta | Auth | Descripción | Respuestas |
+
+- GET | `/postres/` | No | Lista todos los postres | 200 OK |
+- POST | `/postres/` | Sí | Crea un postre (con imagen opcional) | 201 Created, 400 datos inválidos, 401 sin token |
+- GET | `/postres/<id>/` | No | Consulta un postre por su id | 200 OK, 404 no existe |
+- PUT | `/postres/<id>/` | Sí | Edita un postre y puede cambiar su imagen | 200 OK, 400 datos inválidos, 401 sin token, 404 no existe |
+- DELETE | `/postres/<id>/` | Sí | Elimina el postre y su imagen del disco | 204 No Content, 401 sin token, 404 no existe |
+
+## Campos del postre
+
+| Campo | Tipo | Obligatorio | Regla |
+
+- `nombre` | texto | Sí | Mínimo 3 y máximo 50 caracteres |
+- `descripcion` | texto | Sí | Mínimo 10 y máximo 150 caracteres |
+- `imagen` | archivo | No | Debe ser una imagen válida (JPG, PNG, etc.) |
+
+Para enviar la imagen, usar `multipart/form-data`. Sin imagen se puede enviar JSON.
+
+## Ejemplos
+
+Login
+`POST /api/token/`
+json
+{"username": "valeska", "password": ""}
+Respuesta `200`:
+
+
+Crear postre (`POST /postres/`, form-data, con Bearer token)
+
+| Key | Value |
+
+| nombre | Tiramisu |
+| descripcion | Postre italiano con café y cacao |
+| imagen | (archivo tiramisu.jpg) |
+
+Respuesta `201`:
+json
+{
+  "id": 1,
+  "nombre": "Tiramisu",
+  "imagen": "/imagenes/imagenes/tiramisu.jpg",
+  "descripcion": "Postre italiano con café y cacao"
+}
+
+
+## Ejemplos de errores
+
+| Caso | Respuesta |
+
+| POST sin token | `401` `{"detail": "Authentication credentials were not provided."}` |
+| Nombre de 2 letras | `400` `{"nombre": ["El nombre debe tener al menos 3 caracteres"]}` |
+| Descripción corta | `400` `{"descripcion": ["la descripcion debe tener al menos 10 caracteres"]}` |
+| Archivo que no es imagen | `400` `{"imagen": ["Upload a valid image..."]}` |
+| Postre inexistente | `404` `{"error": "Postre no encontrado"}` |
+
+## Ejecución
+
+- Crear la base de datos en MySQL: naranjapi
+- Descargar Bruno y crear coleccion NaranjaApi
+- pip install djangorestframework djangorestframework-simplejwt pillow pymysql
+- python manage.py makemigrations
+- python manage.py migrate
+- python manage.py createsuperuser
+- python manage.py runserver
